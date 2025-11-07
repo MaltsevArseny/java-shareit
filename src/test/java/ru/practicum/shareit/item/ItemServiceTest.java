@@ -135,7 +135,7 @@ class ItemServiceTest {
         List<ItemDto> result = itemService.searchItems("drill", 0, 10);
 
         assertThat(result).hasSize(1);
-        assertThat(result.get(0).getName()).isEqualTo("Drill");
+        assertThat(result.getFirst().getName()).isEqualTo("Drill");
     }
 
     @Test
@@ -228,6 +228,6 @@ class ItemServiceTest {
         List<ItemWithBookingsDto> result = itemService.getUserItems(1L, 0, 10);
 
         assertThat(result).hasSize(1);
-        assertThat(result.get(0).getName()).isEqualTo("Drill");
+        assertThat(result.getFirst().getName()).isEqualTo("Drill");
     }
 }

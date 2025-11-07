@@ -167,7 +167,7 @@ class BookingServiceTest {
         List<BookingResponseDto> result = bookingService.getUserBookings(BookingState.ALL, 2L, 0, 10);
 
         assertThat(result).hasSize(1);
-        assertThat(result.get(0).getId()).isEqualTo(1L);
+        assertThat(result.getFirst().getId()).isEqualTo(1L);
     }
 
     @Test
@@ -179,6 +179,6 @@ class BookingServiceTest {
         List<BookingResponseDto> result = bookingService.getOwnerBookings(BookingState.ALL, 1L, 0, 10);
 
         assertThat(result).hasSize(1);
-        assertThat(result.get(0).getId()).isEqualTo(1L);
+        assertThat(result.getFirst().getId()).isEqualTo(1L);
     }
 }

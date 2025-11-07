@@ -52,7 +52,7 @@ class ItemRepositoryTest {
         List<Item> items = itemRepository.searchAvailableItems("drill", PageRequest.of(0, 10));
 
         assertThat(items).hasSize(1);
-        assertThat(items.get(0).getName()).isEqualTo("Drill");
+        assertThat(items.getFirst().getName()).isEqualTo("Drill");
     }
 
     @Test

@@ -2,9 +2,9 @@ package ru.practicum.shareit.user;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.exception.EntityNotFoundException;
 
-import javax.transaction.Transactional;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -16,11 +16,9 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public UserDto createUser(UserDto userDto) {
-        User user = new User();
-        user.setName(userDto.getName());
-        user.setEmail(userDto.getEmail());
+        User user = UserMapper.toModel(userDto);
         User savedUser = userRepository.save(user);
-        return toDto(savedUser);
+        return UserMapper.toDto(savedUser);
     }
 
     @Override
@@ -29,28 +27,23 @@ public class UserServiceImpl implements UserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new EntityNotFoundException("Пользователь с ID " + userId + " не найден"));
 
-        if (userDto.getName() != null) {
-            user.setName(userDto.getName());
-        }
-        if (userDto.getEmail() != null) {
-            user.setEmail(userDto.getEmail());
-        }
+        UserMapper.updateModelFromDto(user, userDto);
 
         User updatedUser = userRepository.save(user);
-        return toDto(updatedUser);
+        return UserMapper.toDto(updatedUser);
     }
 
     @Override
     public UserDto getUserById(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new EntityNotFoundException("Пользователь с ID " + userId + " не найден"));
-        return toDto(user);
+        return UserMapper.toDto(user);
     }
 
     @Override
     public List<UserDto> getAllUsers() {
         return userRepository.findAll().stream()
-                .map(this::toDto)
+                .map(UserMapper::toDto)
                 .collect(Collectors.toList());
     }
 
@@ -61,9 +54,5 @@ public class UserServiceImpl implements UserService {
             throw new EntityNotFoundException("Пользователь с ID " + userId + " не найден");
         }
         userRepository.deleteById(userId);
-    }
-
-    private UserDto toDto(User user) {
-        return new UserDto(user.getId(), user.getName(), user.getEmail());
     }
 }

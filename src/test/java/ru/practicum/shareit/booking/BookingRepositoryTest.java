@@ -42,8 +42,8 @@ class BookingRepositoryTest {
                 savedBooker.getId(), PageRequest.of(0, 10));
 
         assertThat(bookings).hasSize(1);
-        assertThat(bookings.get(0).getItem().getName()).isEqualTo("Drill");
-        assertThat(bookings.get(0).getBooker().getName()).isEqualTo("Booker");
+        assertThat(bookings.getFirst().getItem().getName()).isEqualTo("Drill");
+        assertThat(bookings.getFirst().getBooker().getName()).isEqualTo("Booker");
     }
 
     @Test
@@ -66,7 +66,7 @@ class BookingRepositoryTest {
                 savedOwner.getId(), PageRequest.of(0, 10));
 
         assertThat(bookings).hasSize(1);
-        assertThat(bookings.get(0).getItem().getName()).isEqualTo("Drill");
+        assertThat(bookings.getFirst().getItem().getName()).isEqualTo("Drill");
     }
 
     @Test

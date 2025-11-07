@@ -19,7 +19,7 @@ class ErrorHandlerTest {
         ErrorHandler.ErrorResponse response = errorHandler.handleEntityNotFoundException(exception);
 
         assertThat(response).isNotNull();
-        assertThat(response.getError()).isEqualTo("Entity not found");
+        assertThat(response.error()).isEqualTo("Entity not found");
     }
 
     @Test
@@ -29,7 +29,7 @@ class ErrorHandlerTest {
         ErrorHandler.ErrorResponse response = errorHandler.handleValidationException(exception);
 
         assertThat(response).isNotNull();
-        assertThat(response.getError()).isEqualTo("Validation failed");
+        assertThat(response.error()).isEqualTo("Validation failed");
     }
 
     @Test
@@ -39,7 +39,7 @@ class ErrorHandlerTest {
         ErrorHandler.ErrorResponse response = errorHandler.handleAccessDeniedException(exception);
 
         assertThat(response).isNotNull();
-        assertThat(response.getError()).isEqualTo("Access denied");
+        assertThat(response.error()).isEqualTo("Access denied");
     }
 
     @Test
@@ -49,13 +49,33 @@ class ErrorHandlerTest {
         ErrorHandler.ErrorResponse response = errorHandler.handleThrowable(exception);
 
         assertThat(response).isNotNull();
-        assertThat(response.getError()).isEqualTo("Произошла непредвиденная ошибка.");
+        assertThat(response.error()).isEqualTo("Произошла непредвиденная ошибка.");
     }
 
     @Test
     void errorResponse_ShouldHaveCorrectStructure() {
         ErrorHandler.ErrorResponse errorResponse = new ErrorHandler.ErrorResponse("Test error");
 
-        assertThat(errorResponse.getError()).isEqualTo("Test error");
+        assertThat(errorResponse.error()).isEqualTo("Test error");
+    }
+
+    @Test
+    void validationErrorResponse_ShouldHaveCorrectStructure() {
+        ErrorHandler.FieldError fieldError = new ErrorHandler.FieldError("field", "message");
+        ErrorHandler.ValidationErrorResponse validationResponse =
+                new ErrorHandler.ValidationErrorResponse("Validation error", java.util.List.of(fieldError));
+
+        assertThat(validationResponse.error()).isEqualTo("Validation error");
+        assertThat(validationResponse.fieldErrors()).hasSize(1);
+        assertThat(validationResponse.fieldErrors().getFirst().field()).isEqualTo("field");
+        assertThat(validationResponse.fieldErrors().getFirst().message()).isEqualTo("message");
+    }
+
+    @Test
+    void fieldError_ShouldHaveCorrectStructure() {
+        ErrorHandler.FieldError fieldError = new ErrorHandler.FieldError("email", "Invalid email format");
+
+        assertThat(fieldError.field()).isEqualTo("email");
+        assertThat(fieldError.message()).isEqualTo("Invalid email format");
     }
 }

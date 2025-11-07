@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.booking.BookingRepository;
 import ru.practicum.shareit.booking.BookingStatus;
 import ru.practicum.shareit.booking.Booking;
@@ -14,7 +15,6 @@ import ru.practicum.shareit.item.dto.*;
 import ru.practicum.shareit.user.User;
 import ru.practicum.shareit.user.UserRepository;
 
-import javax.transaction.Transactional;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
@@ -34,15 +34,9 @@ public class ItemServiceImpl implements ItemService {
         User owner = userRepository.findById(userId)
                 .orElseThrow(() -> new EntityNotFoundException("Пользователь с ID " + userId + " не найден"));
 
-        Item item = new Item();
-        item.setName(itemDto.getName());
-        item.setDescription(itemDto.getDescription());
-        item.setAvailable(itemDto.getAvailable());
-        item.setOwner(owner);
-        item.setRequestId(itemDto.getRequestId());
-
+        Item item = ItemMapper.toModel(itemDto, owner);
         Item savedItem = itemRepository.save(item);
-        return toDto(savedItem);
+        return ItemMapper.toDto(savedItem);
     }
 
     @Override
@@ -55,18 +49,9 @@ public class ItemServiceImpl implements ItemService {
             throw new AccessDeniedException("Редактировать вещь может только её владелец");
         }
 
-        if (itemDto.getName() != null) {
-            item.setName(itemDto.getName());
-        }
-        if (itemDto.getDescription() != null) {
-            item.setDescription(itemDto.getDescription());
-        }
-        if (itemDto.getAvailable() != null) {
-            item.setAvailable(itemDto.getAvailable());
-        }
-
+        ItemMapper.updateModelFromDto(item, itemDto);
         Item updatedItem = itemRepository.save(item);
-        return toDto(updatedItem);
+        return ItemMapper.toDto(updatedItem);
     }
 
     @Override
@@ -79,7 +64,7 @@ public class ItemServiceImpl implements ItemService {
                 .map(this::toCommentDto)
                 .collect(Collectors.toList());
 
-        ItemWithBookingsDto itemWithBookingsDto = toItemWithBookingsDto(item);
+        ItemWithBookingsDto itemWithBookingsDto = ItemMapper.toItemWithBookingsDto(item);
         itemWithBookingsDto.setComments(comments);
 
         // Добавляем информацию о бронированиях только для владельца
@@ -130,7 +115,7 @@ public class ItemServiceImpl implements ItemService {
         Pageable pageable = PageRequest.of(from / size, size);
         return itemRepository.searchAvailableItems(text, pageable)
                 .stream()
-                .map(this::toDto)
+                .map(ItemMapper::toDto)
                 .collect(Collectors.toList());
     }
 
@@ -159,22 +144,6 @@ public class ItemServiceImpl implements ItemService {
 
         Comment savedComment = commentRepository.save(comment);
         return toCommentDto(savedComment);
-    }
-
-    private ItemDto toDto(Item item) {
-        return new ItemDto(item.getId(), item.getName(), item.getDescription(), item.getAvailable(), item.getRequestId());
-    }
-
-    private ItemWithBookingsDto toItemWithBookingsDto(Item item) {
-        return new ItemWithBookingsDto(
-                item.getId(),
-                item.getName(),
-                item.getDescription(),
-                item.getAvailable(),
-                null,
-                null,
-                Collections.emptyList()
-        );
     }
 
     private CommentResponseDto toCommentDto(Comment comment) {

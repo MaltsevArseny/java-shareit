@@ -1,9 +1,10 @@
 package ru.practicum.shareit.item;
 
+import jakarta.persistence.*;
 import lombok.*;
 import ru.practicum.shareit.user.User;
 
-import javax.persistence.*;
+
 
 @Entity
 @Table(name = "items")
