@@ -1,0 +1,157 @@
+package ru.practicum.shareit.item;
+
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import ru.practicum.shareit.booking.BookingRepository;
+import ru.practicum.shareit.booking.BookingStatus;
+import ru.practicum.shareit.booking.Booking;
+import ru.practicum.shareit.exception.AccessDeniedException;
+import ru.practicum.shareit.exception.EntityNotFoundException;
+import ru.practicum.shareit.exception.ValidationException;
+import ru.practicum.shareit.item.dto.*;
+import ru.practicum.shareit.user.User;
+import ru.practicum.shareit.user.UserRepository;
+
+import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Service
+@RequiredArgsConstructor
+public class ItemServiceImpl implements ItemService {
+    private final ItemRepository itemRepository;
+    private final UserRepository userRepository;
+    private final BookingRepository bookingRepository;
+    private final CommentRepository commentRepository;
+
+    @Override
+    @Transactional
+    public ItemDto createItem(ItemDto itemDto, Long userId) {
+        User owner = userRepository.findById(userId)
+                .orElseThrow(() -> new EntityNotFoundException("Пользователь с ID " + userId + " не найден"));
+
+        Item item = ItemMapper.toModel(itemDto, owner);
+        Item savedItem = itemRepository.save(item);
+        return ItemMapper.toDto(savedItem);
+    }
+
+    @Override
+    @Transactional
+    public ItemDto updateItem(ItemDto itemDto, Long itemId, Long userId) {
+        Item item = itemRepository.findById(itemId)
+                .orElseThrow(() -> new EntityNotFoundException("Вещь с ID " + itemId + " не найдена"));
+
+        if (!item.getOwner().getId().equals(userId)) {
+            throw new AccessDeniedException("Редактировать вещь может только её владелец");
+        }
+
+        ItemMapper.updateModelFromDto(item, itemDto);
+        Item updatedItem = itemRepository.save(item);
+        return ItemMapper.toDto(updatedItem);
+    }
+
+    @Override
+    public ItemWithBookingsDto getItemById(Long itemId, Long userId) {
+        Item item = itemRepository.findById(itemId)
+                .orElseThrow(() -> new EntityNotFoundException("Вещь с ID " + itemId + " не найдена"));
+
+        List<CommentResponseDto> comments = commentRepository.findByItemIdOrderByCreatedDesc(itemId)
+                .stream()
+                .map(this::toCommentDto)
+                .collect(Collectors.toList());
+
+        ItemWithBookingsDto itemWithBookingsDto = ItemMapper.toItemWithBookingsDto(item);
+        itemWithBookingsDto.setComments(comments);
+
+        // Добавляем информацию о бронированиях только для владельца
+        if (item.getOwner().getId().equals(userId)) {
+            LocalDateTime now = LocalDateTime.now();
+
+            // Последнее бронирование
+            Booking lastBooking = bookingRepository
+                    .findFirstByItemIdAndStartLessThanEqualAndStatusOrderByStartDesc(
+                            itemId, now, BookingStatus.APPROVED)
+                    .orElse(null);
+
+            // Следующее бронирование
+            Booking nextBooking = bookingRepository
+                    .findFirstByItemIdAndStartAfterAndStatusOrderByStartAsc(
+                            itemId, now, BookingStatus.APPROVED)
+                    .orElse(null);
+
+            if (lastBooking != null) {
+                itemWithBookingsDto.setLastBooking(
+                        new ItemWithBookingsDto.BookingInfo(lastBooking.getId(), lastBooking.getBooker().getId()));
+            }
+            if (nextBooking != null) {
+                itemWithBookingsDto.setNextBooking(
+                        new ItemWithBookingsDto.BookingInfo(nextBooking.getId(), nextBooking.getBooker().getId()));
+            }
+        }
+
+        return itemWithBookingsDto;
+    }
+
+    @Override
+    public List<ItemWithBookingsDto> getUserItems(Long userId, int from, int size) {
+        Pageable pageable = PageRequest.of(from / size, size);
+        List<Item> items = itemRepository.findByOwnerIdOrderById(userId, pageable);
+
+        return items.stream()
+                .map(item -> getItemById(item.getId(), userId))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<ItemDto> searchItems(String text, int from, int size) {
+        if (text == null || text.isBlank()) {
+            return Collections.emptyList();
+        }
+
+        Pageable pageable = PageRequest.of(from / size, size);
+        return itemRepository.searchAvailableItems(text, pageable)
+                .stream()
+                .map(ItemMapper::toDto)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public CommentResponseDto addComment(Long itemId, CommentRequestDto commentDto, Long userId) {
+        Item item = itemRepository.findById(itemId)
+                .orElseThrow(() -> new EntityNotFoundException("Вещь с ID " + itemId + " не найдена"));
+
+        User author = userRepository.findById(userId)
+                .orElseThrow(() -> new EntityNotFoundException("Пользователь с ID " + userId + " не найден"));
+
+        // Проверяем, что пользователь действительно брал вещь в аренду
+        List<Booking> userBookings = bookingRepository.findCompletedBookingsByUserAndItem(
+                userId, itemId, BookingStatus.APPROVED, LocalDateTime.now());
+
+        if (userBookings.isEmpty()) {
+            throw new ValidationException("Пользователь не брал эту вещь в аренду или аренда еще не завершена");
+        }
+
+        Comment comment = new Comment();
+        comment.setText(commentDto.getText());
+        comment.setItem(item);
+        comment.setAuthor(author);
+        comment.setCreated(LocalDateTime.now());
+
+        Comment savedComment = commentRepository.save(comment);
+        return toCommentDto(savedComment);
+    }
+
+    private CommentResponseDto toCommentDto(Comment comment) {
+        return new CommentResponseDto(
+                comment.getId(),
+                comment.getText(),
+                comment.getAuthor().getName(),
+                comment.getCreated()
+        );
+    }
+}
