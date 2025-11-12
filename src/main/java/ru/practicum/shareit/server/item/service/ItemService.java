@@ -1,7 +1,6 @@
 package ru.practicum.shareit.server.item.service;
 
 import ru.practicum.shareit.server.item.dto.ItemDto;
-
 import java.util.List;
 
 public interface ItemService {

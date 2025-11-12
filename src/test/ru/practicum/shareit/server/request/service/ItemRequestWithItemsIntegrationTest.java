@@ -71,7 +71,7 @@ class ItemRequestWithItemsIntegrationTest {
         assertNotNull(retrievedRequest.getItems());
         assertEquals(1, retrievedRequest.getItems().size());
 
-        ItemRequestDto.ItemDto responseItem = retrievedRequest.getItems().get(0);
+        ItemRequestDto.ItemDto responseItem = retrievedRequest.getItems().getFirst();
         assertEquals("MacBook Pro", responseItem.getName());
         assertEquals(owner.getId(), responseItem.getOwnerId());
         assertEquals(itemRequest.getId(), responseItem.getRequestId());
@@ -104,8 +104,8 @@ class ItemRequestWithItemsIntegrationTest {
         // Then
         assertNotNull(allRequests);
         assertEquals(1, allRequests.size());
-        assertEquals(1, allRequests.get(0).getItems().size());
-        assertEquals("MacBook Pro", allRequests.get(0).getItems().get(0).getName());
+        assertEquals(1, allRequests.getFirst().getItems().size());
+        assertEquals("MacBook Pro", allRequests.getFirst().getItems().getFirst().getName());
     }
 
     @Test
@@ -121,6 +121,6 @@ class ItemRequestWithItemsIntegrationTest {
         // Then - видит только запросы других пользователей
         assertNotNull(allRequests);
         assertEquals(1, allRequests.size()); // Только запрос от requester
-        assertEquals("Need a laptop for work", allRequests.get(0).getDescription());
+        assertEquals("Need a laptop for work", allRequests.getFirst().getDescription());
     }
 }

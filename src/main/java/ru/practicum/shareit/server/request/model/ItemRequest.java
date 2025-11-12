@@ -22,7 +22,8 @@ public class ItemRequest {
     private String description;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "requester_id")
+    @JoinColumn(name = "requester_id", nullable = false)
+    @ToString.Exclude
     private User requester;
 
     @Column(name = "created", nullable = false)

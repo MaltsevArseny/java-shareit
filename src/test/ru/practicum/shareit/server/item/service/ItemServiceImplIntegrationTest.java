@@ -112,6 +112,6 @@ class ItemServiceImplIntegrationTest {
         // Then
         assertNotNull(searchResults);
         assertEquals(1, searchResults.size());
-        assertEquals("Power Drill", searchResults.get(0).getName());
+        assertEquals("Power Drill", searchResults.getFirst().getName());
     }
 }

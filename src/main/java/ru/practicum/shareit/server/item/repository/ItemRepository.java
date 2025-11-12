@@ -9,9 +9,7 @@ import ru.practicum.shareit.server.item.model.Item;
 import java.util.List;
 
 public interface ItemRepository extends JpaRepository<Item, Long> {
-
     List<Item> findByOwnerId(Long ownerId);
-
     List<Item> findByRequestId(Long requestId);
 
     @Query("SELECT i FROM Item i " +
@@ -19,8 +17,4 @@ public interface ItemRepository extends JpaRepository<Item, Long> {
             "OR LOWER(i.description) LIKE LOWER(CONCAT('%', :text, '%'))) " +
             "AND i.available = true")
     List<Item> searchAvailableItems(@Param("text") String text, Pageable pageable);
-
-    // Для обратной совместимости
-    List<Item> findByNameContainingIgnoreCaseOrDescriptionContainingIgnoreCaseAndAvailableIsTrue(
-            String name, String description, Pageable pageable);
 }

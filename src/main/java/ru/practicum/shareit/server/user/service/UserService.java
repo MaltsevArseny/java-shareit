@@ -1,7 +1,6 @@
 package ru.practicum.shareit.server.user.service;
 
 import ru.practicum.shareit.server.user.model.User;
-
 import java.util.List;
 
 public interface UserService {

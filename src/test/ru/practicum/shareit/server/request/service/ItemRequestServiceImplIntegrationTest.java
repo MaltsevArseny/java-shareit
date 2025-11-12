@@ -153,9 +153,29 @@ class ItemRequestServiceImplIntegrationTest {
     @Test
     void getAll_shouldRespectPagination() {
         // Given
-        for (int i = 1; i <= 5; i++) {
+        {
             ItemRequestDto request = new ItemRequestDto();
-            request.setDescription("Request " + i);
+            request.setDescription("Request " + 1);
+            itemRequestService.create(request, testUser1.getId());
+        }
+        {
+            ItemRequestDto request = new ItemRequestDto();
+            request.setDescription("Request " + 2);
+            itemRequestService.create(request, testUser1.getId());
+        }
+        {
+            ItemRequestDto request = new ItemRequestDto();
+            request.setDescription("Request " + 3);
+            itemRequestService.create(request, testUser1.getId());
+        }
+        {
+            ItemRequestDto request = new ItemRequestDto();
+            request.setDescription("Request " + 4);
+            itemRequestService.create(request, testUser1.getId());
+        }
+        {
+            ItemRequestDto request = new ItemRequestDto();
+            request.setDescription("Request " + 5);
             itemRequestService.create(request, testUser1.getId());
         }
 
@@ -177,7 +197,7 @@ class ItemRequestServiceImplIntegrationTest {
 
         assertNotNull(thirdPage);
         assertEquals(1, thirdPage.size());
-        assertEquals("Request 1", thirdPage.get(0).getDescription());
+        assertEquals("Request 1", thirdPage.getFirst().getDescription());
     }
 
     @Test

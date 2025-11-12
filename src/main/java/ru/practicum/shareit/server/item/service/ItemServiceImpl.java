@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.server.item.dto.ItemDto;
 import ru.practicum.shareit.server.item.model.Item;
 import ru.practicum.shareit.server.item.repository.ItemRepository;
@@ -12,11 +13,13 @@ import ru.practicum.shareit.server.request.repository.ItemRequestRepository;
 import ru.practicum.shareit.server.user.model.User;
 import ru.practicum.shareit.server.user.service.UserService;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class ItemServiceImpl implements ItemService {
 
     private final ItemRepository itemRepository;
@@ -24,6 +27,7 @@ public class ItemServiceImpl implements ItemService {
     private final ItemRequestRepository itemRequestRepository;
 
     @Override
+    @Transactional
     public ItemDto create(ItemDto itemDto, Long userId) {
         User owner = userService.getUserById(userId);
         Item item = new Item();
@@ -33,7 +37,7 @@ public class ItemServiceImpl implements ItemService {
         item.setOwner(owner);
 
         if (itemDto.getRequestId() != null) {
-            ItemRequest itemRequest = (ItemRequest) itemRequestRepository.findById(itemDto.getRequestId())
+            ItemRequest itemRequest = itemRequestRepository.findById(itemDto.getRequestId())
                     .orElseThrow(() -> new IllegalArgumentException("Item request not found"));
             item.setRequest(itemRequest);
         }
@@ -43,10 +47,11 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
+    @Transactional
     public ItemDto update(Long itemId, ItemDto itemDto, Long userId) {
-        User owner = userService.getUserById(userId);
-        Item existingItem;
-        existingItem = itemRepository.findById(itemId)
+        userService.getUserById(userId);
+
+        Item existingItem = itemRepository.findById(itemId)
                 .orElseThrow(() -> new IllegalArgumentException("Item not found"));
 
         if (!existingItem.getOwner().getId().equals(userId)) {
@@ -69,7 +74,7 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     public ItemDto getById(Long itemId, Long userId) {
-        userService.getUserById(userId); // Проверяем существование пользователя
+        userService.getUserById(userId);
         Item item = itemRepository.findById(itemId)
                 .orElseThrow(() -> new IllegalArgumentException("Item not found"));
         return convertToDto(item);
@@ -87,13 +92,11 @@ public class ItemServiceImpl implements ItemService {
     @Override
     public List<ItemDto> search(String text, Integer from, Integer size) {
         if (text == null || text.isBlank()) {
-            return List.of();
+            return Collections.emptyList();
         }
 
         Pageable pageable = PageRequest.of(from / size, size);
-        List<Item> items = itemRepository
-                .findByNameContainingIgnoreCaseOrDescriptionContainingIgnoreCaseAndAvailableIsTrue(
-                        text, text, pageable);
+        List<Item> items = itemRepository.searchAvailableItems(text, pageable);
 
         return items.stream()
                 .map(this::convertToDto)
